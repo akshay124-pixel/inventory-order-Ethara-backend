@@ -73,9 +73,16 @@ class ProductService:
     def delete_product(db: Session, product_id: int) -> dict:
         """Delete a product"""
         product = ProductService.get_product_by_id(db, product_id)
-        db.delete(product)
-        db.commit()
-        return {"message": "Product deleted successfully"}
+        try:
+            db.delete(product)
+            db.commit()
+            return {"message": "Product deleted successfully"}
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot delete product because it is referenced in one or more active orders."
+            )
     
     @staticmethod
     def get_low_stock_products(db: Session, threshold: int = 10) -> List[Product]:

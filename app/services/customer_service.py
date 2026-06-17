@@ -73,6 +73,13 @@ class CustomerService:
     def delete_customer(db: Session, customer_id: int) -> dict:
         """Delete a customer"""
         customer = CustomerService.get_customer_by_id(db, customer_id)
-        db.delete(customer)
-        db.commit()
-        return {"message": "Customer deleted successfully"}
+        try:
+            db.delete(customer)
+            db.commit()
+            return {"message": "Customer deleted successfully"}
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot delete customer because they have one or more active orders."
+            )
